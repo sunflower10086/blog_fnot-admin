@@ -1,42 +1,28 @@
 <template>
   <div class="markdown-editor">
-    <div class="editor-container">
-      <MarkdownToolbar @insert-markdown="insertMarkdownContent" />
-      <div class="editor-content">
-        <div class="markdown-input-wrapper">
-          <textarea 
-            ref="markdownInput"
-            v-model="localContent" 
-            placeholder="输入您的 Markdown 内容..."
-            class="markdown-input"
-            @input="updatePreviewScroll"
-          ></textarea>
-          <div class="markdown-input-overlay">
-            <span>Markdown 编辑区</span>
-          </div>
-        </div>
-        <div class="markdown-preview-wrapper">
-          <div 
-            ref="markdownPreview"
-            class="markdown-preview" 
-            v-html="renderedContent"
-            @scroll="updateInputScroll"
-          ></div>
-          <div class="markdown-preview-overlay">
-            <span>预览区</span>
-          </div>
-        </div>
+    <MarkdownToolbar @insert="handleInsert" />
+    <div class="editor-content">
+      <div class="editor-container">
+        <textarea
+          ref="editorTextarea"
+          class="editor-textarea"
+          v-model="localContent"
+          @scroll="handleEditorScroll"
+          placeholder="开始编辑..."
+        ></textarea>
+      </div>
+      <div class="preview-container">
+        <div ref="previewContainer" v-html="renderedContent" @scroll="handlePreviewScroll"></div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
-import { markdownRenderer } from '@/utils/markdown-config'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { createMarkdownRenderer, editorStyles } from '@/config/editor.config'
 import MarkdownToolbar from './MarkdownToolbar.vue'
-
-const md = markdownRenderer
+import 'highlight.js/styles/github.css'
 
 const props = defineProps({
   content: {
@@ -46,249 +32,168 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:content'])
+const md = createMarkdownRenderer()
+const editorTextarea = ref(null)
+const previewContainer = ref(null)
+let isScrolling = false
+
+// 添加自定义样式
+const addCustomStyles = () => {
+  const style = document.createElement('style')
+  style.textContent = editorStyles
+  document.head.appendChild(style)
+}
+
+// 在组件挂载时添加样式
+addCustomStyles()
+
+// 确保初始滚动位置为顶部
+onMounted(() => {
+  if (editorTextarea.value) {
+    editorTextarea.value.scrollTop = 0
+  }
+  if (previewContainer.value) {
+    previewContainer.value.scrollTop = 0
+  }
+})
 
 const localContent = computed({
   get: () => props.content,
-  set: (value) => emit('update:content', value)
+  set: (value) => {
+    emit('update:content', value)
+  }
 })
 
-const markdownInput = ref(null)
-const markdownPreview = ref(null)
+const renderedContent = computed(() => {
+  return md.render(localContent.value || '')
+})
 
-const updatePreviewScroll = () => {
-  nextTick(() => {
-    if (markdownInput.value && markdownPreview.value) {
-      const inputScrollPercentage = markdownInput.value.scrollTop / (markdownInput.value.scrollHeight - markdownInput.value.clientHeight)
-      markdownPreview.value.scrollTop = (markdownPreview.value.scrollHeight - markdownPreview.value.clientHeight) * inputScrollPercentage
-    }
-  })
+// 同步滚动处理
+const handleEditorScroll = (e) => {
+  if (isScrolling) return
+  isScrolling = true
+
+  const { scrollTop, scrollHeight, clientHeight } = e.target
+  const scrollPercentage = scrollTop / (scrollHeight - clientHeight)
+  
+  if (previewContainer.value) {
+    const previewScrollHeight = previewContainer.value.scrollHeight - previewContainer.value.clientHeight
+    previewContainer.value.scrollTop = previewScrollHeight * scrollPercentage
+  }
+
+  setTimeout(() => {
+    isScrolling = false
+  }, 50)
 }
 
-const updateInputScroll = () => {
-  nextTick(() => {
-    if (markdownInput.value && markdownPreview.value) {
-      const previewScrollPercentage = markdownPreview.value.scrollTop / (markdownPreview.value.scrollHeight - markdownPreview.value.clientHeight)
-      markdownInput.value.scrollTop = (markdownInput.value.scrollHeight - markdownInput.value.clientHeight) * previewScrollPercentage
-    }
-  })
+const handlePreviewScroll = (e) => {
+  if (isScrolling) return
+  isScrolling = true
+
+  const { scrollTop, scrollHeight, clientHeight } = e.target
+  const scrollPercentage = scrollTop / (scrollHeight - clientHeight)
+  
+  if (editorTextarea.value) {
+    const editorScrollHeight = editorTextarea.value.scrollHeight - editorTextarea.value.clientHeight
+    editorTextarea.value.scrollTop = editorScrollHeight * scrollPercentage
+  }
+
+  setTimeout(() => {
+    isScrolling = false
+  }, 50)
 }
 
-const uploadedImages = ref([])
-
-const handleFileUpload = (event) => {
-  const files = event.target.files
-  for (let file of files) {
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        uploadedImages.value.push({
-          name: file.name,
-          url: e.target.result
-        })
-        localContent.value += `\n![${file.name}](${e.target.result})\n`
-      }
-      reader.readAsDataURL(file)
-    }
+// 处理工具栏的插入事件
+const handleInsert = ({ type, data }) => {
+  const textarea = editorTextarea.value
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const text = localContent.value || ''
+  
+  if (type === 'text') {
+    const { prefix, suffix = '' } = data
+    const selectedText = text.substring(start, end)
+    const newText = text.substring(0, start) + 
+                   prefix + selectedText + suffix +
+                   text.substring(end)
+    
+    localContent.value = newText
+    nextTick(() => {
+      textarea.focus()
+      textarea.setSelectionRange(
+        start + prefix.length,
+        end + prefix.length
+      )
+    })
+  } else if (type === 'list') {
+    const { prefix } = data
+    const selectedText = text.substring(start, end)
+    const lines = selectedText.split('\n')
+    const newLines = lines.map(line => prefix + line).join('\n')
+    
+    const newText = text.substring(0, start) + newLines + text.substring(end)
+    localContent.value = newText
   }
 }
 
-const insertMarkdownContent = (content) => {
-  const currentPosition = markdownInput.value.selectionStart
-  const beforeContent = localContent.value.slice(0, currentPosition)
-  const afterContent = localContent.value.slice(currentPosition)
-  localContent.value = `${beforeContent}${content}${afterContent}`
-}
-
-const renderedContent = computed(() => {
-  return md.render(localContent.value)
+watch(() => props.content, (newVal) => {
+  if (newVal !== localContent.value) {
+    localContent.value = newVal
+  }
 })
 </script>
 
 <style scoped>
 .markdown-editor {
   display: flex;
-  flex-grow: 1;
-  max-width: 100%;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.editor-container {
-  width: 100%;
-  display: flex;
   flex-direction: column;
   height: 100%;
+  background-color: #ffffff;
+  overflow: hidden;
 }
 
 .editor-content {
   display: flex;
-  flex-grow: 1;
+  flex: 1;
   overflow: hidden;
+  min-height: 0;
+  max-height: 100%;
 }
 
-.markdown-input-wrapper,
-.markdown-preview-wrapper {
-  position: relative;
-  width: 50%;
-  height: 100%;
-}
-
-.markdown-input,
-.markdown-preview {
-  width: 100%;
-  height: 100%;
-  border: none;
-  padding: 20px;
-  resize: none;
+.editor-container,
+.preview-container {
+  flex: 1;
   overflow-y: auto;
-  font-size: 16px;
+  padding: 20px;
+  max-height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-textarea {
+  width: 100%;
+  flex: 1;
+  border: none;
+  resize: none;
+  outline: none;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 14px;
   line-height: 1.6;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow-y: hidden;
 }
 
-.markdown-input {
-  background-color: #f9f9fc;
-  border-right: 1px solid #e0e0e0;
-}
-
-.markdown-preview {
-  background-color: white;
-}
-
-.markdown-input-overlay,
-.markdown-preview-overlay {
-  position: absolute;
-  top: -30px;
-  left: 20px;
-  color: #888;
-  font-size: 0.9em;
-}
-
-/* 自定义滚动条 */
-.markdown-input::-webkit-scrollbar,
-.markdown-preview::-webkit-scrollbar {
-  width: 8px;
-}
-
-.markdown-input::-webkit-scrollbar-track,
-.markdown-preview::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.markdown-input::-webkit-scrollbar-thumb,
-.markdown-preview::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-.markdown-input::-webkit-scrollbar-thumb:hover,
-.markdown-preview::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* 表格样式优化 */
-.markdown-table-container {
-  margin: 20px 0;
-  overflow-x: auto;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
-}
-
-.markdown-table-wrapper {
-  border-radius: 12px;
+.preview-container {
+  border-left: 1px solid #e0e0e0;
+  background-color: #fafafa;
+  box-sizing: border-box;
   overflow: hidden;
 }
 
-.markdown-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.markdown-table .table-header {
-  background-color: #f0f4f8;
-  font-weight: 600;
-  color: #2c3e50;
-  transition: background-color 0.3s ease;
-}
-
-.markdown-table .table-header:hover {
-  background-color: #e6eaf0;
-}
-
-.markdown-table .table-row {
-  transition: background-color 0.3s ease;
-}
-
-.markdown-table .table-row:nth-child(even) {
-  background-color: #f9f9fc;
-}
-
-.markdown-table .table-row:hover {
-  background-color: #f0f0f5;
-}
-
-.markdown-table .table-header-cell,
-.markdown-table .table-data-cell {
-  padding: 12px 15px;
-  border: 1px solid #e0e4e8;
-  text-align: left;
-  vertical-align: middle;
-  font-size: 14px;
-}
-
-.markdown-table .table-header-cell {
-  background-color: #f0f4f8;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.markdown-table .table-data-cell {
-  color: #34495e;
-}
-
-/* 响应式表格 */
-@media screen and (max-width: 600px) {
-  .markdown-table-container {
-    margin: 10px 0;
-  }
-
-  .markdown-table .table-header-cell,
-  .markdown-table .table-data-cell {
-    padding: 8px 10px;
-    font-size: 12px;
-  }
-}
-
-/* 代码块样式 */
-.markdown-preview pre.hljs {
-  background-color: #f4f4f4;
-  border-radius: 8px;
-  padding: 15px;
-  margin: 15px 0;
-  line-height: 1.6;
-  overflow-x: auto;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid #4a90e2;
-}
-
-.markdown-preview pre.hljs code {
-  font-family: 'Fira Code', 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'Courier New', monospace;
-  font-size: 14px;
-}
-
-/* 语言标签 */
-.markdown-preview pre.hljs::before {
-  content: attr(class);
-  display: block;
-  background-color: #4a90e2;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  margin-bottom: 10px;
-  align-self: flex-start;
+.preview-container > div {
+  height: 100%;
+  overflow-y: auto;
 }
 </style> 

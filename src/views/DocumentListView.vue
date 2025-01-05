@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMarkdownStore } from '@/stores/markdown'
 
@@ -7,11 +7,28 @@ const router = useRouter()
 const markdownStore = useMarkdownStore()
 
 const searchQuery = ref('')
+const searchInput = ref(null)
 
 const filteredDocuments = computed(() => {
   return markdownStore.documents.filter(doc => 
     doc.title.toLowerCase().includes(searchQuery.value.toLowerCase())
   ).sort((a, b) => b.createdAt - a.createdAt)
+})
+
+const handleKeydown = (e) => {
+  // 检查是否是 Mac 的 Command+K 或 Windows 的 Ctrl+K
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault() // 阻止默认行为
+    searchInput.value?.focus()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
 })
 
 const formatDate = (date) => {
@@ -46,8 +63,9 @@ const deleteDocument = (doc) => {
         <div class="search-wrapper">
           <i class="search-icon">🔍</i>
           <input 
+            ref="searchInput"
             v-model="searchQuery" 
-            placeholder="搜索文档..." 
+            placeholder="搜索文档... (⌘K / Ctrl+K)" 
             class="search-input"
           />
         </div>
@@ -116,13 +134,15 @@ const deleteDocument = (doc) => {
   align-items: center;
   width: 100%;
   max-width: 600px;
-  gap: 15px;
+  gap: 20px;
+  padding: 0 20px;
+  box-sizing: border-box;
 }
 
 .search-wrapper {
   position: relative;
-  flex-grow: 1;
-  margin-right: 15px;
+  width: 400px;
+  flex: none;
 }
 
 .search-icon {
@@ -131,6 +151,7 @@ const deleteDocument = (doc) => {
   top: 50%;
   transform: translateY(-50%);
   opacity: 0.5;
+  z-index: 1;
 }
 
 .search-input {
@@ -140,6 +161,7 @@ const deleteDocument = (doc) => {
   border-radius: 8px;
   background-color: white;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .search-input:focus {
@@ -157,6 +179,8 @@ const deleteDocument = (doc) => {
   cursor: pointer;
   transition: background-color 0.3s ease;
   white-space: nowrap;
+  width: auto;
+  flex: none;
 }
 
 .new-document-btn:hover {
@@ -164,19 +188,21 @@ const deleteDocument = (doc) => {
 }
 
 /* 响应式调整 */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .actions {
     flex-direction: column;
+    align-items: center;
     gap: 15px;
   }
 
   .search-wrapper {
     width: 100%;
-    margin-right: 0;
+    max-width: 400px;
   }
 
   .new-document-btn {
-    width: 100%;
+    width: auto;
+    min-width: 120px;
   }
 }
 

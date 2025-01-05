@@ -4,7 +4,8 @@
     title="文档属性"
     direction="rtl"
     size="500px"
-    :modal="false"
+    :modal="true"
+    :close-on-click-modal="true"
     custom-class="metadata-sidebar"
     @close="handleClose"
   >
@@ -190,9 +191,46 @@ const saveMetadata = () => {
   flex-grow: 1;
 }
 
+.new-tag-input .el-button {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  border: none;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.new-tag-input .el-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #45a049, #3d8b40);
+}
+
 .sidebar-actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 30px;
+}
+
+.sidebar-actions .el-button {
+  min-width: 120px;
+  height: 40px;
+  background: linear-gradient(135deg, #409EFF, #3a8ee6);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(64, 158, 255, 0.2);
+}
+
+.sidebar-actions .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+  background: linear-gradient(135deg, #3a8ee6, #3080dc);
+}
+
+.sidebar-actions .el-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(64, 158, 255, 0.2);
 }
 </style> 

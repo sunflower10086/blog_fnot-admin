@@ -1,192 +1,119 @@
 <template>
-  <div class="markdown-toolbar">
-    <div class="toolbar-section">
-      <div class="toolbar-group">
-        <el-tooltip 
-          effect="dark" 
-          content="插入表格 (快速创建Markdown表格)" 
-          placement="bottom"
-        >
-          <button 
-            @click="openTableDialog" 
-            class="toolbar-button" 
-            title="插入表格"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="3" y1="9" x2="21" y2="9"></line>
-              <line x1="3" y1="15" x2="21" y2="15"></line>
-              <line x1="9" y1="3" x2="9" y2="21"></line>
-              <line x1="15" y1="3" x2="15" y2="21"></line>
-            </svg>
-          </button>
-        </el-tooltip>
-
-        <el-tooltip 
-          effect="dark" 
-          content="上传图片 (支持本地图片)" 
-          placement="bottom"
-        >
-          <button 
-            @click="openImageUpload" 
-            class="toolbar-button" 
-            title="上传图片"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <circle cx="8.5" cy="8.5" r="1.5"></circle>
-              <polyline points="21 15 16 10 5 21"></polyline>
-            </svg>
-          </button>
-        </el-tooltip>
-
-        <el-tooltip 
-          effect="dark" 
-          content="插入代码片段 (支持多种语言)" 
-          placement="bottom"
-        >
-          <button 
-            @click="openCodeSnippetDialog" 
-            class="toolbar-button" 
-            title="插入代码片段"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="16 18 22 12 16 6"></polyline>
-              <polyline points="8 6 2 12 8 18"></polyline>
-              <line x1="12" y1="2" x2="12" y2="22"></line>
-            </svg>
-          </button>
-        </el-tooltip>
-
-        <el-tooltip 
-          effect="dark" 
-          content="插入代码块 (带语法高亮)" 
-          placement="bottom"
-        >
-          <button 
-            @click="openCodeBlockDialog" 
-            class="toolbar-button" 
-            title="插入代码块"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M10 9.5 8 12l2 2.5"></path>
-              <path d="M14 9.5 16 12l-2 2.5"></path>
-              <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-              <line x1="7" y1="20" x2="17" y2="20"></line>
-            </svg>
-          </button>
-        </el-tooltip>
-      </div>
-    </div>
-
-    <!-- 表格插入对话框 -->
-    <el-dialog 
-      v-model="tableDialogVisible" 
-      title="插入表格" 
-      width="400px"
-      :custom-class="'custom-dialog'"
-    >
-      <div class="table-size-selector">
-        <el-input-number 
-          v-model="tableRows" 
-          :min="1" 
-          :max="10" 
-          label="行数" 
-          size="small"
-        />
-        <el-input-number 
-          v-model="tableColumns" 
-          :min="1" 
-          :max="10" 
-          label="列数" 
-          size="small"
-        />
-      </div>
-      <template #footer>
-        <el-button @click="tableDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="insertTable">确定</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 代码片段对话框 -->
-    <el-dialog 
-      v-model="codeSnippetDialogVisible" 
-      title="插入代码片段" 
-      width="500px"
-      :custom-class="'custom-dialog'"
-    >
-      <el-select 
-        v-model="selectedLanguage" 
-        placeholder="选择编程语言" 
-        style="width: 100%;"
-      >
-        <el-option 
-          v-for="lang in programmingLanguages" 
-          :key="lang" 
-          :label="lang" 
-          :value="lang"
-        />
-      </el-select>
-      <el-input 
-        v-model="codeSnippet" 
-        type="textarea" 
-        :rows="5" 
-        placeholder="输入代码片段" 
-        style="margin-top: 10px;"
-      />
-      <template #footer>
-        <el-button @click="codeSnippetDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="insertCodeSnippet">确定</el-button>
-      </template>
-    </el-dialog>
+  <div class="editor-toolbar">
+    <button class="toolbar-button" title="一级标题" @click="insertText('# ')">
+      <span class="button-icon">H1</span>
+    </button>
+    <button class="toolbar-button" title="二级标题" @click="insertText('## ')">
+      <span class="button-icon">H2</span>
+    </button>
+    <button class="toolbar-button" title="三级标题" @click="insertText('### ')">
+      <span class="button-icon">H3</span>
+    </button>
+    <div class="divider"></div>
+    <button class="toolbar-button" title="粗体" @click="insertText('**', '**')">
+      <span class="button-icon">B</span>
+    </button>
+    <button class="toolbar-button" title="斜体" @click="insertText('*', '*')">
+      <span class="button-icon">I</span>
+    </button>
+    <div class="divider"></div>
+    <button class="toolbar-button" title="引用" @click="insertText('> ')">
+      <span class="button-icon">"</span>
+    </button>
+    <button class="toolbar-button" title="无序列表" @click="insertList('- ')">
+      <span class="button-icon">•</span>
+    </button>
+    <button class="toolbar-button" title="有序列表" @click="insertList('1. ')">
+      <span class="button-icon">1.</span>
+    </button>
+    <div class="divider"></div>
+    <button class="toolbar-button" title="表格" @click="insertTable">
+      <span class="button-icon">⊞</span>
+    </button>
+    <button class="toolbar-button" title="代码块" @click="insertCode">
+      <span class="button-icon">{}</span>
+    </button>
+    <button class="toolbar-button" title="Vue模板" @click="insertVueTemplate">
+      <span class="button-icon">Vue</span>
+    </button>
+    <div class="divider"></div>
+    <button class="toolbar-button" title="上传图片" @click="uploadImage">
+      <span class="button-icon">📷</span>
+    </button>
+    <button class="toolbar-button" title="插入链接" @click="insertText('[', ']()')">
+      <span class="button-icon">🔗</span>
+    </button>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { ElMessage, ElTooltip } from 'element-plus'
+import { supportedLanguages, getLanguageDisplayName } from '@/config/highlight.config'
 
-const emit = defineEmits(['insert-markdown'])
+const emit = defineEmits(['insert'])
 
-// 表格相关
-const tableDialogVisible = ref(false)
-const tableRows = ref(3)
-const tableColumns = ref(3)
+// 工具栏功能
+const insertText = (prefix, suffix = '') => {
+  emit('insert', { type: 'text', data: { prefix, suffix } })
+}
 
-const openTableDialog = () => {
-  tableDialogVisible.value = true
+const insertList = (prefix) => {
+  emit('insert', { type: 'list', data: { prefix } })
 }
 
 const insertTable = () => {
-  let tableMarkdown = '| '
-  
-  // 创建表头
-  for (let i = 0; i < tableColumns.value; i++) {
-    tableMarkdown += `标题${i + 1} | `
-  }
-  tableMarkdown += '\n| '
-  
-  // 创建分隔线
-  for (let i = 0; i < tableColumns.value; i++) {
-    tableMarkdown += '--- | '
-  }
-  tableMarkdown += '\n'
-  
-  // 创建数据行
-  for (let i = 0; i < tableRows.value; i++) {
-    tableMarkdown += '| '
-    for (let j = 0; j < tableColumns.value; j++) {
-      tableMarkdown += `内容${i + 1}-${j + 1} | `
-    }
-    tableMarkdown += '\n'
-  }
-  
-  emit('insert-markdown', tableMarkdown)
-  tableDialogVisible.value = false
+  const tableTemplate = `
+| 标题1 | 标题2 | 标题3 |
+|-------|-------|-------|
+| 内容1 | 内容2 | 内容3 |
+| 内容4 | 内容5 | 内容6 |
+`
+  emit('insert', { type: 'text', data: { prefix: tableTemplate } })
 }
 
-// 图片上传相关
-const openImageUpload = () => {
+const insertCode = () => {
+  // 生成语言选项列表，带有显示名称
+  const languageOptions = supportedLanguages
+    .map(lang => `${getLanguageDisplayName(lang)} (${lang})`)
+    .join('\n')
+  
+  const language = window.prompt(`请选择编程语言：\n${languageOptions}`, 'javascript')
+  if (language) {
+    const normalizedLang = language.toLowerCase().trim()
+    // 移除可能的显示名称部分，只保留语言标识符
+    const langId = normalizedLang.match(/\((.*?)\)$/)
+      ? normalizedLang.match(/\((.*?)\)$/)[1]
+      : normalizedLang
+    
+    if (supportedLanguages.includes(langId)) {
+      const codeTemplate = `\`\`\`${langId}\n// 在此输入代码\n\`\`\``
+      emit('insert', { type: 'text', data: { prefix: codeTemplate } })
+    } else {
+      alert('不支持的语言类型！请从列表中选择。')
+    }
+  }
+}
+
+const insertVueTemplate = () => {
+  const vueTemplate = '```vue\n' +
+    '<template>\n' +
+    '  <div class="example">\n' +
+    '    <h1>{{ message }}</h1>\n' +
+    '    <button @click="count++">点击次数: {{ count }}</button>\n' +
+    '  </div>\n' +
+    '</template>\n\n' +
+    '<script setup>\n' +
+    'import { ref } from "vue"\n\n' +
+    'const message = ref("Hello Vue!")\n' +
+    'const count = ref(0)\n' +
+    '</sc' + 'ript>\n\n' +
+    '<style scoped>\n' +
+    '.example { padding: 20px; text-align: center; }\n' +
+    '</style>\n' +
+    '```'
+  emit('insert', { type: 'text', data: { prefix: vueTemplate } })
+}
+
+const uploadImage = () => {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'image/*'
@@ -195,101 +122,115 @@ const openImageUpload = () => {
     if (file) {
       const reader = new FileReader()
       reader.onload = (e) => {
-        const imageMarkdown = `\n![${file.name}](${e.target.result})\n`
-        emit('insert-markdown', imageMarkdown)
+        const imageMarkdown = `![${file.name}](${e.target.result})`
+        emit('insert', { type: 'text', data: { prefix: imageMarkdown } })
       }
       reader.readAsDataURL(file)
     }
   }
   input.click()
 }
-
-// 代码片段相关
-const codeSnippetDialogVisible = ref(false)
-const selectedLanguage = ref('')
-const codeSnippet = ref('')
-const programmingLanguages = [
-  'javascript', 'python', 'java', 'cpp', 'typescript', 
-  'rust', 'go', 'swift', 'kotlin', 'php', 
-  'ruby', 'scala', 'shell', 'sql', 'html', 'css'
-]
-
-const openCodeSnippetDialog = () => {
-  codeSnippetDialogVisible.value = true
-}
-
-const insertCodeSnippet = () => {
-  if (!selectedLanguage.value) {
-    ElMessage.warning('请选择编程语言')
-    return
-  }
-  
-  if (!codeSnippet.value.trim()) {
-    ElMessage.warning('请输入代码片段')
-    return
-  }
-  
-  const codeMarkdown = `\`\`\`${selectedLanguage.value}\n${codeSnippet.value}\n\`\`\`\n`
-  emit('insert-markdown', codeMarkdown)
-  
-  codeSnippetDialogVisible.value = false
-  selectedLanguage.value = ''
-  codeSnippet.value = ''
-}
 </script>
 
 <style scoped>
-.markdown-toolbar {
-  background-color: #f9f9fc;
+.editor-toolbar {
+  padding: 8px 12px;
   border-bottom: 1px solid #e0e0e0;
-  padding: 10px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.toolbar-section {
-  display: flex;
-  align-items: center;
-}
-
-.toolbar-group {
-  display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 4px;
+  background-color: #f8f9fa;
 }
 
 .toolbar-button {
-  background-color: transparent;
-  border: none;
-  color: #666;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 6px;
-  transition: all 0.3s ease;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid #dfe1e5;
+  background-color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #444;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 .toolbar-button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  color: #4a90e2;
-  transform: scale(1.1);
+  background-color: #f1f3f4;
+  border-color: #c6c9cc;
+  color: #1a73e8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.toolbar-button svg {
-  width: 20px;
-  height: 20px;
-  stroke: currentColor;
+.toolbar-button:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
-.table-size-selector {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
+.button-icon {
+  font-size: 16px;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-:deep(.custom-dialog) {
-  border-radius: 12px !important;
+.divider {
+  width: 1px;
+  height: 24px;
+  margin: 6px 4px;
+  background-color: #e0e0e0;
+  align-self: center;
+}
+
+/* 特殊按钮样式 */
+.toolbar-button[title="粗体"] .button-icon {
+  font-weight: bold;
+}
+
+.toolbar-button[title="斜体"] .button-icon {
+  font-style: italic;
+}
+
+.toolbar-button[title="Vue模板"] .button-icon {
+  color: #42b883;
+  font-weight: bold;
+}
+
+/* 悬浮提示 */
+.toolbar-button:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+  .toolbar-button {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+  }
+
+  .button-icon {
+    font-size: 14px;
+  }
+
+  .divider {
+    height: 20px;
+    margin: 6px 2px;
+  }
 }
 </style> 
