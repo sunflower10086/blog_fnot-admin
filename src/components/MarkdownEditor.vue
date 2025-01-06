@@ -182,7 +182,27 @@ watch(() => props.content, (newVal) => {
   line-height: 1.6;
   padding: 10px;
   box-sizing: border-box;
-  overflow-y: hidden;
+  overflow-y: auto;
+}
+
+/* 添加滚动条样式 */
+.editor-textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.editor-textarea::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.editor-textarea::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.editor-textarea::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 .preview-container {
@@ -195,5 +215,31 @@ watch(() => props.content, (newVal) => {
 .preview-container > div {
   height: 100%;
   overflow-y: auto;
+  padding-right: 4px;
+  scroll-behavior: smooth;
+}
+
+/* 统一滚动条样式 */
+.editor-textarea::-webkit-scrollbar,
+.preview-container > div::-webkit-scrollbar {
+  width: 8px;
+}
+
+.editor-textarea::-webkit-scrollbar-track,
+.preview-container > div::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.editor-textarea::-webkit-scrollbar-thumb,
+.preview-container > div::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.editor-textarea::-webkit-scrollbar-thumb:hover,
+.preview-container > div::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 </style> 
