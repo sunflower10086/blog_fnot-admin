@@ -1,15 +1,16 @@
 import { defineStore } from 'pinia'
-import { mockLogin, mockUpdateProfile, mockChangePassword } from '@/api/auth'
+import { login as apiLogin, logout as apiLogout, getUserInfo } from '@/api/user'
 import { post } from '@/utils/http'
+import { getToken, setToken, getUser, setUser, removeToken, removeUser, clearAuth } from '@/utils/auth'
 
 // 判断是否为开发环境
 const isDev = import.meta.env.MODE === 'development'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    token: localStorage.getItem('token') || '',
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
-    isAuthenticated: !!(localStorage.getItem('token') || '')
+    token: getToken() || '',
+    user: getUser(),
+    isAuthenticated: !!getToken()
   }),
   
   getters: {
@@ -21,39 +22,74 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(username, password) {
       try {
-        // 在开发环境使用模拟登录，生产环境使用真实 API
-        let response;
-        if (isDev) {
-          response = await mockLogin({ username, password })
-        } else {
-          response = await post('/auth/login', { username, password })
+        // 使用实际API登录
+        const response = await apiLogin({ 
+          account: username, 
+          password: password 
+        })
+  
+        // 验证API响应
+        if (!response || !response.token) {
+          throw new Error('登录失败：服务器未返回有效的登录凭证')
         }
   
-        // 保存令牌和用户信息
-        const { token: newToken, user: userData } = response
-        this.token = newToken
-        this.user = userData
+        // 保存令牌
+        this.token = response.token
         this.isAuthenticated = true
-  
+        
         // 保存到本地存储
-        localStorage.setItem('token', newToken)
-        localStorage.setItem('user', JSON.stringify(userData))
+        setToken(response.token)
+        
+        // 获取用户信息
+        await this.fetchUserInfo()
   
-        return userData
+        return this.user
       } catch (error) {
-        throw new Error(error.message || '登录失败')
+        // 清除可能部分设置的认证状态
+        this.token = ''
+        this.isAuthenticated = false
+        clearAuth()
+        
+        // 根据错误类型提供更具体的错误信息
+        if (error.status === 401) {
+          throw new Error('用户名或密码错误')
+        } else if (error.status === 403) {
+          throw new Error('账户已被禁用，请联系管理员')
+        } else if (error.status >= 500) {
+          throw new Error('服务器错误，请稍后再试')
+        } else {
+          throw new Error(error.message || '登录失败，请检查网络连接')
+        }
       }
     },
     
-    logout() {
-      // 清除令牌和用户信息
-      this.token = ''
-      this.user = null
-      this.isAuthenticated = false
-      
-      // 清除本地存储
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+    async fetchUserInfo() {
+      try {
+        const userData = await getUserInfo()
+        this.user = userData
+        setUser(userData)
+        return userData
+      } catch (error) {
+        console.error('获取用户信息失败:', error)
+        throw error
+      }
+    },
+    
+    async logout() {
+      try {
+        // 调用登出API
+        await apiLogout()
+      } catch (error) {
+        console.error('登出API调用失败:', error)
+      } finally {
+        // 无论API是否成功，都清除本地状态
+        this.token = ''
+        this.user = null
+        this.isAuthenticated = false
+        
+        // 清除本地存储
+        clearAuth()
+      }
     },
     
     updateUserInfo(userData) {
@@ -61,7 +97,7 @@ export const useAuthStore = defineStore('auth', {
       this.user = userData
       
       // 更新本地存储
-      localStorage.setItem('user', JSON.stringify(userData))
+      setUser(userData)
     },
     
     async updateProfile(profileData) {

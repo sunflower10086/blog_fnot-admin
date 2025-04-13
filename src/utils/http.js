@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getToken, clearAuth } from '@/utils/auth'
 
 // 创建 axios 实例
 const http = axios.create({
@@ -12,14 +13,19 @@ const http = axios.create({
 // 请求拦截器
 http.interceptors.request.use(
   config => {
-    // 从本地存储获取 token
-    const token = localStorage.getItem('token')
+    // 使用auth.js中的getToken函数获取token
+    const token = getToken()
     if (token) {
+      // 确保token值有效且正确添加到请求头
       config.headers['Authorization'] = `Bearer ${token}`
+      console.log('添加token到请求:', config.url, '- Token:', token)
+    } else {
+      console.warn('请求无token:', config.url)
     }
     return config
   },
   error => {
+    console.error('请求拦截器错误:', error)
     return Promise.reject(error)
   }
 )
@@ -28,14 +34,18 @@ http.interceptors.request.use(
 http.interceptors.response.use(
   response => {
     // 如果响应成功并且有数据，则直接返回数据部分
+    console.log('请求成功:', response.config.url)
     return response.data
   },
   error => {
+    console.error('请求错误:', error.config?.url, error)
+    
     // 处理 401 错误
     if (error.response && error.response.status === 401) {
-      // 清除本地存储中的认证信息
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      console.warn('认证失败(401)，即将重定向到登录页')
+      
+      // 使用auth.js中的clearAuth函数清除认证信息
+      clearAuth()
       
       // 重定向到登录页
       window.location.href = '/login'
@@ -43,10 +53,13 @@ http.interceptors.response.use(
     
     // 创建统一的错误信息
     const errorMessage = error.response?.data?.message || '服务器错误，请稍后再试'
+    const errorStatus = error.response?.status || 500
+    
+    console.error(`请求失败 [${errorStatus}]:`, errorMessage)
     
     return Promise.reject({
       message: errorMessage,
-      status: error.response?.status,
+      status: errorStatus,
       data: error.response?.data
     })
   }

@@ -1,38 +1,50 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useMarkdownStore } from '@/stores/markdown'
+import { useBlogStore } from '@/stores/blog'
+import { ElMessageBox, ElMessage } from 'element-plus'
 
 const router = useRouter()
-const markdownStore = useMarkdownStore()
+const blogStore = useBlogStore()
 
 const searchQuery = ref('')
-const searchInput = ref(null)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const isLoading = computed(() => blogStore.isLoading)
+const hasFetched = ref(false)
 
-const filteredDocuments = computed(() => {
-  return markdownStore.documents.filter(doc => 
-    doc.title.toLowerCase().includes(searchQuery.value.toLowerCase())
-  ).sort((a, b) => b.createdAt - a.createdAt)
-})
 
-const handleKeydown = (e) => {
-  // 检查是否是 Mac 的 Command+K 或 Windows 的 Ctrl+K
-  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-    e.preventDefault() // 阻止默认行为
-    searchInput.value?.focus()
+// 文章数据
+const posts = computed(() => blogStore.posts)
+const totalPosts = computed(() => blogStore.totalPosts)
+
+// 获取文章列表
+const fetchPosts = async () => {
+  try {
+    await blogStore.fetchPosts(currentPage.value, pageSize.value)
+    hasFetched.value = true
+  } catch (error) {
+    ElMessage.error('获取文章列表失败')
   }
 }
 
+// 监听页码变化
+watch(currentPage, () => {
+  fetchPosts()
+})
+
+// 监听搜索关键词变化
+watch(searchQuery, () => {
+  currentPage.value = 1
+  fetchPosts()
+})
+
 onMounted(() => {
-  window.addEventListener('keydown', handleKeydown)
+  fetchPosts()
 })
 
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown)
-})
-
-const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('zh-CN', {
+const formatDate = (timestamp) => {
+  return new Date(timestamp * 1000).toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
@@ -43,64 +55,104 @@ const createNewDocument = () => {
   router.push({ name: 'MarkdownEditor' })
 }
 
-const editDocument = (doc) => {
+const editDocument = (post) => {
   router.push({ 
     name: 'EditDocument', 
-    params: { id: doc.id } 
+    params: { id: post.id } 
   })
 }
 
-const deleteDocument = (doc) => {
-  markdownStore.deleteDocument(doc.id)
+const deleteDocument = async (post) => {
+  try {
+    const confirmed = await ElMessageBox.confirm(
+      '确定要删除这篇文章吗？此操作不可恢复。',
+      '删除确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    if (confirmed === 'confirm') {
+      await blogStore.deletePost(post.id)
+      ElMessage.success('文章删除成功')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除文章失败')
+    }
+  }
 }
 </script>
 
 <template>
   <div class="document-list-view">
     <div class="list-header">
-      <h1 class="page-title">我的文档</h1>
+      <h1 class="page-title">博客文章管理</h1>
       <div class="actions">
         <div class="search-wrapper">
           <i class="search-icon">🔍</i>
           <input 
-            ref="searchInput"
             v-model="searchQuery" 
-            placeholder="搜索文档... (⌘K / Ctrl+K)" 
+            placeholder="搜索文章..." 
             class="search-input"
           />
         </div>
         <button @click="createNewDocument" class="new-document-btn">
-          + 新建文档
+          + 新建文章
         </button>
       </div>
     </div>
 
-    <div v-if="filteredDocuments.length === 0" class="no-documents">
+    <div v-if="isLoading && !hasFetched" class="loading-state">
+      <div class="loader"></div>
+      <p>加载中...</p>
+    </div>
+
+    <div v-else-if="posts.length === 0" class="no-documents">
       <img src="/empty-state.svg" alt="No documents" class="empty-state-image" />
-      <p>暂无文档，点击"新建文档"开始创作</p>
+      <p>暂无文章，点击"新建文章"开始创作</p>
     </div>
 
     <div v-else class="document-grid">
       <div 
-        v-for="doc in filteredDocuments" 
-        :key="doc.id" 
+        v-for="post in posts" 
+        :key="post.id" 
         class="document-card"
       >
         <div class="card-header">
-          <h3>{{ doc.title }}</h3>
+          <h3>{{ post.title }}</h3>
           <span class="document-date">
-            {{ formatDate(doc.createdAt) }}
+            {{ formatDate(post.createdAt) }}
+          </span>
+        </div>
+        <div class="document-meta">
+          <span class="views">阅读: {{ post.views }}</span>
+          <span v-if="post.category" class="category">
+            分类: {{ post.category }}
           </span>
         </div>
         <div class="document-actions">
-          <button @click="editDocument(doc)" class="edit-btn">
+          <button @click="editDocument(post)" class="edit-btn">
             编辑
           </button>
-          <button @click="deleteDocument(doc)" class="delete-btn">
+          <button @click="deleteDocument(post)" class="delete-btn">
             删除
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- 分页 -->
+    <div v-if="totalPosts > pageSize" class="pagination">
+      <el-pagination
+        layout="prev, pager, next"
+        :total="totalPosts"
+        :page-size="pageSize"
+        :current-page="currentPage"
+        @current-change="currentPage = $event"
+      />
     </div>
   </div>
 </template>
@@ -187,23 +239,27 @@ const deleteDocument = (doc) => {
   background-color: #357abd;
 }
 
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .actions {
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-  }
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 0;
+}
 
-  .search-wrapper {
-    width: 100%;
-    max-width: 400px;
-  }
+.loader {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #4a90e2;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
 
-  .new-document-btn {
-    width: auto;
-    min-width: 120px;
-  }
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .document-grid {
@@ -226,13 +282,12 @@ const deleteDocument = (doc) => {
 
 .card-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   margin-bottom: 15px;
 }
 
 .card-header h3 {
-  margin: 0;
+  margin: 0 0 10px 0;
   color: #333;
   font-weight: 500;
 }
@@ -242,21 +297,36 @@ const deleteDocument = (doc) => {
   font-size: 0.8em;
 }
 
+.document-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.views, .category {
+  font-size: 0.8em;
+  color: #666;
+  background-color: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
 .document-actions {
   display: flex;
   justify-content: space-between;
 }
 
 .edit-btn, .delete-btn {
-  padding: 8px 15px;
+  padding: 8px 16px;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s;
 }
 
 .edit-btn {
-  background-color: #4CAF50;
+  background-color: #4a90e2;
   color: white;
 }
 
@@ -265,14 +335,30 @@ const deleteDocument = (doc) => {
   color: white;
 }
 
+.edit-btn:hover {
+  background-color: #357abd;
+}
+
+.delete-btn:hover {
+  background-color: #d32f2f;
+}
+
+.pagination {
+  margin-top: 40px;
+  display: flex;
+  justify-content: center;
+}
+
 .no-documents {
   text-align: center;
-  color: #888;
-  margin-top: 50px;
+  padding: 50px 20px;
+  color: #666;
 }
 
 .empty-state-image {
-  max-width: 300px;
+  width: 150px;
+  height: auto;
   margin-bottom: 20px;
+  opacity: 0.7;
 }
 </style> 

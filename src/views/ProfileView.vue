@@ -18,6 +18,13 @@
         >
           <i class="fa fa-lock"></i> 修改密码
         </div>
+        <div 
+          class="tab" 
+          :class="{ active: activeTab === 'settings' }" 
+          @click="activeTab = 'settings'"
+        >
+          <i class="fa fa-cog"></i> 系统设置
+        </div>
       </div>
       
       <!-- 基本信息表单 -->
@@ -148,6 +155,44 @@
           </div>
         </form>
       </div>
+      
+      <!-- 系统设置面板 -->
+      <div v-if="activeTab === 'settings'" class="tab-content">
+        <form @submit.prevent="saveSettings" class="settings-form">
+          <div class="form-group">
+            <label for="apiBaseUrl">API基础路径</label>
+            <input 
+              id="apiBaseUrl" 
+              v-model="settings.apiBaseUrl" 
+              type="text" 
+              placeholder="例如: /api/v1"
+            />
+            <span class="form-hint">设置API的基础路径，通常无需修改</span>
+          </div>
+          
+          <div class="form-group">
+            <label for="backendUrl">后端服务地址</label>
+            <input 
+              id="backendUrl" 
+              v-model="settings.backendUrl" 
+              type="text" 
+              placeholder="例如: http://127.0.0.1:8000"
+            />
+            <span class="form-hint">设置后端服务器的地址，修改后需要刷新页面</span>
+          </div>
+          
+          <div v-if="settingsMessage" class="form-message" :class="settingsMessage.type">
+            <i :class="messageIcon"></i> {{ settingsMessage.text }}
+          </div>
+          
+          <div class="form-actions">
+            <button type="submit" class="save-btn" :disabled="savingSettings">
+              <i v-if="savingSettings" class="fa fa-circle-o-notch fa-spin"></i>
+              {{ savingSettings ? '保存中...' : '保存设置' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>
@@ -157,6 +202,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api'
+import config from '@/config/config'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -164,8 +210,10 @@ const authStore = useAuthStore()
 const activeTab = ref('profile')
 const savingProfile = ref(false)
 const changingPassword = ref(false)
+const savingSettings = ref(false)
 const profileMessage = ref(null)
 const passwordMessage = ref(null)
+const settingsMessage = ref(null)
 
 // 密码可见性控制
 const showPassword = reactive({
@@ -189,9 +237,24 @@ const passwordForm = reactive({
   confirmPassword: ''
 })
 
+// 系统设置
+const settings = reactive({
+  apiBaseUrl: localStorage.getItem('apiBaseUrl') || config.baseApi,
+  backendUrl: localStorage.getItem('backendUrl') || config.backendUrl
+})
+
 // 消息图标
 const messageIcon = computed(() => {
-  const message = activeTab.value === 'profile' ? profileMessage.value : passwordMessage.value
+  let message
+  
+  if (activeTab.value === 'profile') {
+    message = profileMessage.value
+  } else if (activeTab.value === 'password') {
+    message = passwordMessage.value
+  } else if (activeTab.value === 'settings') {
+    message = settingsMessage.value
+  }
+  
   if (!message) return ''
   return message.type === 'success' ? 'fa fa-check-circle' : 'fa fa-exclamation-circle'
 })
@@ -302,6 +365,36 @@ const changePassword = async () => {
     }
   } finally {
     changingPassword.value = false
+  }
+}
+
+// 保存系统设置
+const saveSettings = async () => {
+  settingsMessage.value = null
+  savingSettings.value = true
+  
+  try {
+    // 保存API基础地址到本地存储
+    localStorage.setItem('apiBaseUrl', settings.apiBaseUrl)
+    localStorage.setItem('backendUrl', settings.backendUrl)
+    
+    // 显示成功消息
+    settingsMessage.value = {
+      type: 'success',
+      text: '设置已保存，请刷新页面使修改生效'
+    }
+    
+    // 可选：2秒后刷新页面
+    setTimeout(() => {
+      window.location.reload()
+    }, 2000)
+  } catch (error) {
+    settingsMessage.value = {
+      type: 'error',
+      text: error.message || '保存设置失败'
+    }
+  } finally {
+    savingSettings.value = false
   }
 }
 </script>

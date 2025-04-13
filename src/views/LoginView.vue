@@ -83,8 +83,14 @@ onMounted(() => {
 })
 
 const handleLogin = async () => {
-  if (!username.value || !password.value) {
-    error.value = '用户名和密码不能为空'
+  // 表单验证
+  if (!username.value.trim()) {
+    error.value = '请输入用户名'
+    return
+  }
+  
+  if (!password.value.trim()) {
+    error.value = '请输入密码'
     return
   }
   
@@ -92,12 +98,23 @@ const handleLogin = async () => {
   isLoading.value = true
   
   try {
+    // 尝试登录
     await authStore.login(username.value, password.value)
+    
     // 登录成功后，重定向到之前请求的页面或默认页面
     const redirectPath = route.query.redirect || '/'
     router.replace(redirectPath)
   } catch (err) {
+    console.error('登录失败:', err)
+    
+    // 显示错误消息
     error.value = err.message || '登录失败，请检查用户名和密码'
+    
+    // 在错误时清空密码字段，让用户重新输入
+    password.value = ''
+    
+    // 保持用户名焦点，便于重新输入
+    document.getElementById('username')?.focus()
   } finally {
     isLoading.value = false
   }
