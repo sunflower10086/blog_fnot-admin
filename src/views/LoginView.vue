@@ -62,11 +62,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useUserStore } from '@/stores/index'
 
 const router = useRouter()
 const route = useRoute()
-const authStore = useAuthStore()
+const authStore = useUserStore()
+console.log(authStore)
 
 const username = ref('')
 const password = ref('')
@@ -83,6 +84,7 @@ onMounted(() => {
 })
 
 const handleLogin = async () => {
+  console.log('正在登录...')
   // 表单验证
   if (!username.value.trim()) {
     error.value = '请输入用户名'
@@ -96,27 +98,15 @@ const handleLogin = async () => {
   
   error.value = ''
   isLoading.value = true
-  
+
   try {
-    // 尝试登录
-    await authStore.login(username.value, password.value)
-    
+    await authStore.Login(username.value, password.value)
     // 登录成功后，重定向到之前请求的页面或默认页面
     const redirectPath = route.query.redirect || '/'
-    router.replace(redirectPath)
+    await router.replace(redirectPath)
   } catch (err) {
-    console.error('登录失败:', err)
-    
-    // 显示错误消息
-    error.value = err.message || '登录失败，请检查用户名和密码'
-    
-    // 在错误时清空密码字段，让用户重新输入
-    password.value = ''
-    
-    // 保持用户名焦点，便于重新输入
-    document.getElementById('username')?.focus()
-  } finally {
     isLoading.value = false
+    password.value = ''
   }
 }
 </script>

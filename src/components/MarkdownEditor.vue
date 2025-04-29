@@ -1,6 +1,6 @@
 <template>
   <div class="markdown-editor">
-    <MarkdownToolbar @insert="handleInsert" />
+     <MarkdownToolbar @insert="handleInsert" />
     <div class="editor-content">
       <div class="editor-container">
         <textarea

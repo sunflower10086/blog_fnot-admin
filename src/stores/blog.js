@@ -61,8 +61,17 @@ export const useBlogStore = defineStore('blog', {
       this.error = null
       try {
         const post = await getPostDetail(postId)
-        this.currentPost = post
-        return post
+        // 将baseInfo中的信息直接提取到currentPost上
+        if (post && post.baseInfo) {
+          this.currentPost = {
+            ...post.baseInfo,
+            ...post,
+            baseInfo: undefined // 移除baseInfo字段
+          }
+        } else {
+          this.currentPost = post
+        }
+        return this.currentPost
       } catch (error) {
         this.error = error.message || '获取文章详情失败'
         throw error
@@ -95,8 +104,17 @@ export const useBlogStore = defineStore('blog', {
       try {
         const post = await updatePost({ post: postData })
         // 如果当前显示的是被更新的文章，更新currentPost
-        if (this.currentPost && this.currentPost.baseInfo.id === post.baseInfo.id) {
-          this.currentPost = post
+        if (this.currentPost && this.currentPost.id === (post.baseInfo?.id || post.id)) {
+          // 将baseInfo中的信息直接提取到currentPost上
+          if (post && post.baseInfo) {
+            this.currentPost = {
+              ...post.baseInfo,
+              ...post,
+              baseInfo: undefined // 移除baseInfo字段
+            }
+          } else {
+            this.currentPost = post
+          }
         }
         // 刷新文章列表
         this.fetchPosts()
@@ -116,7 +134,7 @@ export const useBlogStore = defineStore('blog', {
       try {
         await deletePost(postId)
         // 从列表中移除被删除的文章
-        this.posts = this.posts.filter(p => p.id !== postId)
+        // this.posts = this.posts.filter(p => p.id !== postId)
         // 刷新文章列表
         this.fetchPosts()
         return true

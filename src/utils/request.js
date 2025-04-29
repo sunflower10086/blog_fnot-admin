@@ -32,38 +32,39 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   response => {
     const res = response.data
-    console.log('响应成功:', response.config.url)
-    return res
-  },
-  error => {
-    console.error('响应错误:', error.config?.url, error.message)
-    
-    // 处理401未授权错误
-    if (error.response && error.response.status === 401) {
-      console.warn('认证失败(401)，正在清除认证信息')
-      // 使用auth.js中的clearAuth函数清除认证信息
-      clearAuth()
-      
-      ElMessage({
-        message: '登录已过期，请重新登录',
-        type: 'error',
-        duration: 5 * 1000
-      })
-      
-      // 重定向到登录页面
-      setTimeout(() => {
-        window.location.href = '/login'
-      }, 1500)
-    } else {
-      // 其他错误显示错误消息
-      ElMessage({
-        message: error.response?.data?.message || error.message || '请求失败',
-        type: 'error',
-        duration: 5 * 1000
-      })
-    }
-    
-    return Promise.reject(error)
+      if (res.code === 200) {
+          return res.data
+      } else {
+          console.error('响应错误:', response.config.url, res.msg)
+
+          // 处理401未授权错误
+          if (res.code === 401) {
+              console.warn('认证失败(401)，正在清除认证信息')
+              // 使用auth.js中的clearAuth函数清除认证信息
+              clearAuth()
+
+              ElMessage({
+                  message: '登录已过期，请重新登录',
+                  type: 'error',
+                  duration: 5 * 1000
+              })
+
+              // 重定向到登录页面
+              setTimeout(() => {
+                  window.location.href = '/login'
+              }, 1500)
+          } else {
+              // 其他错误显示错误消息
+              ElMessage({
+                  message: res.msg || '请求失败',
+                  type: 'error',
+                  duration: 5 * 1000
+              })
+          }
+          console.log('响应错误:', res.msg)
+          return Promise.reject(res.msg)
+      }
+
   }
 )
 

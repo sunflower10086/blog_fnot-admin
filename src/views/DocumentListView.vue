@@ -163,7 +163,9 @@ const deleteDocument = async (post) => {
   margin: 0 auto;
   padding: 20px;
   background-color: #f9f9fc;
-  min-height: 100vh;
+  min-height: auto;
+  height: auto;
+  overflow-y: auto;
 }
 
 .page-title {

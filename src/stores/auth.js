@@ -6,10 +6,13 @@ import { getToken, setToken, getUser, setUser, removeToken, removeUser, clearAut
 // 判断是否为开发环境
 const isDev = import.meta.env.MODE === 'development'
 
-export const useAuthStore = defineStore('auth', {
+export const useUserStore = defineStore('user', {
   state: () => ({
     token: getToken() || '',
-    user: getUser(),
+    user: {
+      id: '',
+      name: '',
+    },
     isAuthenticated: !!getToken()
   }),
   
@@ -20,46 +23,32 @@ export const useAuthStore = defineStore('auth', {
   },
   
   actions: {
-    async login(username, password) {
+    async Login(username, password) {
+      console.log('Login', username, password)
       try {
         // 使用实际API登录
-        const response = await apiLogin({ 
-          account: username, 
-          password: password 
+        const response = await apiLogin({
+          account: username,
+          password: password
         })
-  
-        // 验证API响应
-        if (!response || !response.token) {
-          throw new Error('登录失败：服务器未返回有效的登录凭证')
-        }
-  
+
         // 保存令牌
         this.token = response.token
         this.isAuthenticated = true
-        
+        console.log('登录成功', response)
         // 保存到本地存储
         setToken(response.token)
-        
+
         // 获取用户信息
         await this.fetchUserInfo()
-  
-        return this.user
+
+        // return this.user
       } catch (error) {
         // 清除可能部分设置的认证状态
         this.token = ''
         this.isAuthenticated = false
         clearAuth()
-        
-        // 根据错误类型提供更具体的错误信息
-        if (error.status === 401) {
-          throw new Error('用户名或密码错误')
-        } else if (error.status === 403) {
-          throw new Error('账户已被禁用，请联系管理员')
-        } else if (error.status >= 500) {
-          throw new Error('服务器错误，请稍后再试')
-        } else {
-          throw new Error(error.message || '登录失败，请检查网络连接')
-        }
+        throw new Error(error.message)
       }
     },
     

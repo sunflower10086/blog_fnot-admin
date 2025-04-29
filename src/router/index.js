@@ -4,7 +4,7 @@ import DocumentListView from '../views/DocumentListView.vue'
 import LoginView from '../views/LoginView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import ProfileView from '../views/ProfileView.vue'
-import { useAuthStore } from '../stores/auth'
+import { useUserStore } from '../stores/auth'
 
 const routes = [
   {
@@ -56,7 +56,7 @@ const router = createRouter({
 
 // 全局前置守卫
 router.beforeEach((to, from) => {
-  const authStore = useAuthStore()
+  const authStore = useUserStore()
   
   // 检查该路由是否需要登录
   if (to.meta.requiresAuth) {

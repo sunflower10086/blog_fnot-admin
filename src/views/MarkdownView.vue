@@ -30,99 +30,16 @@
       </div>
     </div>
     <div class="editor-container">
-      <div class="editor-sidebar">
-        <div class="section">
-          <h3>分类</h3>
-          <select v-model="categoryId" class="category-select">
-            <option :value="null">-- 选择分类 --</option>
-            <option 
-              v-for="category in categories" 
-              :key="category.id" 
-              :value="category.id"
-            >
-              {{ category.name }}
-            </option>
-          </select>
-          <div v-if="categories.length === 0" class="empty-hint">
-            暂无分类数据
-          </div>
-        </div>
-        
-        <div class="section">
-          <h3>标签</h3>
-          <div v-if="availableTags.length === 0" class="empty-hint">
-            暂无标签数据，请添加新标签
-          </div>
-          <div v-else class="tags-container">
-            <div 
-              v-for="tag in availableTags" 
-              :key="tag.id"
-              class="tag-item"
-              :class="{ 'selected': selectedTags.includes(tag.id) }"
-              @click="toggleTag(tag.id)"
-            >
-              {{ tag.name }}
-            </div>
-          </div>
-          <div class="tag-input-container">
-            <input 
-              v-model="newTag" 
-              @keyup.enter="addNewTag"
-              placeholder="添加新标签"
-              class="tag-input"
-            />
-            <button @click="addNewTag" class="add-tag-btn">添加</button>
-          </div>
-        </div>
-        
-        <div class="section">
-          <h3>封面图片</h3>
-          <input 
-            v-model="coverUrl" 
-            placeholder="输入封面图片URL" 
-            class="cover-input"
-          />
-          <div v-if="coverUrl" class="cover-preview">
-            <img :src="coverUrl" alt="封面预览" />
-          </div>
-        </div>
-        
-        <div class="section">
-          <h3>简介</h3>
-          <textarea 
-            v-model="description" 
-            placeholder="文章简介（200字以内）" 
-            class="description-textarea"
-            maxlength="200"
-          ></textarea>
-        </div>
-      </div>
+      <EditorSidebar
+        v-model:categoryId="categoryId"
+        v-model:selectedTags="selectedTags"
+        v-model:coverUrl="coverUrl"
+        v-model:description="description"
+        v-model:collapsed="sidebarCollapsed"
+      />
       
       <div class="editor-main">
-        <MarkdownToolbar @insert="handleToolbarInsert" />
-        
-        <div class="split-view">
-          <!-- 左侧编辑区 -->
-          <div class="editor-pane">
-            <div class="pane-header">编辑区</div>
-            <div class="editor-wrapper">
-              <textarea 
-                ref="contentTextarea"
-                v-model="content" 
-                placeholder="开始编写文章内容..." 
-                class="content-textarea"
-              ></textarea>
-            </div>
-          </div>
-          
-          <!-- 右侧预览区 -->
-          <div class="preview-pane">
-            <div class="pane-header">预览区</div>
-            <div class="markdown-preview">
-              <div class="preview-container" v-html="renderedContent"></div>
-            </div>
-          </div>
-        </div>
+        <MarkdownEditor v-model:content="content" />
       </div>
     </div>
   </div>
@@ -133,13 +50,17 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useBlogStore } from '@/stores/blog'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import MarkdownToolbar from '@/components/MarkdownToolbar.vue'
+import MarkdownEditor from '@/components/MarkdownEditor.vue'
+import EditorSidebar from '@/components/EditorSidebar.vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 
 const route = useRoute()
 const router = useRouter()
 const blogStore = useBlogStore()
+
+// 侧边栏收起状态
+const sidebarCollapsed = ref(false)
 
 const postId = ref(route.params.id ? parseInt(route.params.id) : null)
 const postTitle = ref('')
@@ -181,7 +102,7 @@ console.log(blogStore.getTags)
 // 格式化日期
 const formatDate = computed(() => {
   if (blogStore.currentPost) {
-    const timestamp = blogStore.currentPost.baseInfo.createdAt
+    const timestamp = blogStore.currentPost.created_at
     return new Date(timestamp * 1000).toLocaleString('zh-CN', {
       year: 'numeric',
       month: 'long',
@@ -280,12 +201,12 @@ onMounted(async () => {
     try {
       const post = await blogStore.fetchPostDetail(postId.value)
       if (post) {
-        postTitle.value = post.baseInfo.title
+        postTitle.value = post.title
         content.value = post.content
-        coverUrl.value = post.baseInfo.cover
-        description.value = post.baseInfo.description
-        categoryId.value = post.baseInfo.categoryId
-        selectedTags.value = post.baseInfo.tags || []
+        coverUrl.value = post.cover
+        description.value = post.description
+        categoryId.value = post.categoryId
+        selectedTags.value = post.tags || []
       }
     } catch (error) {
       ElMessage.error('获取文章详情失败')
@@ -350,10 +271,8 @@ const savePost = async () => {
     if (postId.value) {
       // 更新文章
       const updatedPost = {
-        baseInfo: {
-          id: postId.value,
-          ...postData
-        },
+        id: postId.value,
+        ...postData,
         content: content.value
       }
       await blogStore.updatePost(updatedPost)
@@ -361,7 +280,7 @@ const savePost = async () => {
     } else {
       // 创建新文章
       const newPost = await blogStore.createPost(postData)
-      postId.value = newPost.baseInfo.id
+      postId.value = newPost.id
       ElMessage.success('文章创建成功')
     }
     
@@ -384,7 +303,8 @@ const goBack = () => {
 .markdown-view {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 90vh;
+  /* min-height: 90vh; */
   max-width: 1400px;
   margin: 0 auto;
   background-color: #f9f9fc;
@@ -489,16 +409,6 @@ const goBack = () => {
   overflow: hidden;
   gap: 20px;
   margin-bottom: 20px;
-}
-
-.editor-sidebar {
-  width: 280px;
-  min-width: 280px;
-  padding: 20px;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow-y: auto;
 }
 
 .editor-main {
@@ -694,194 +604,9 @@ const goBack = () => {
   margin: 1em 0;
 }
 
-.section {
-  margin-bottom: 25px;
-}
-
-.section h3 {
-  margin-top: 0;
-  margin-bottom: 12px;
-  color: #333;
-  font-size: 16px;
-  font-weight: 600;
-  position: relative;
-  padding-left: 15px;
-}
-
-.section h3::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 5px;
-  height: 15px;
-  background-color: #4a90e2;
-  border-radius: 3px;
-}
-
-.category-select {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background-color: #f9f9f9;
-  font-size: 14px;
-  color: #333;
-  transition: all 0.3s;
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23555' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-}
-
-.category-select:focus {
-  outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
-  background-color: #fff;
-}
-
-.tags-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 15px;
-}
-
-.tag-item {
-  padding: 8px 14px;
-  background-color: #f0f0f0;
-  border-radius: 20px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.tag-item:hover {
-  background-color: #e0e0e0;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.tag-item.selected {
-  background-color: #4a90e2;
-  color: white;
-  box-shadow: 0 2px 5px rgba(74, 144, 226, 0.3);
-}
-
-.tag-input-container {
-  display: flex;
-  gap: 10px;
-}
-
-.tag-input {
-  flex: 1;
-  padding: 10px 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.3s;
-}
-
-.tag-input:focus {
-  outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
-}
-
-.add-tag-btn {
-  padding: 10px 16px;
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-  box-shadow: 0 2px 5px rgba(74, 144, 226, 0.2);
-}
-
-.add-tag-btn:hover {
-  background-color: #357abd;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
-}
-
-.cover-input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  font-size: 14px;
-  transition: all 0.3s;
-}
-
-.cover-input:focus {
-  outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
-}
-
-.cover-preview {
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-top: 10px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-}
-
-.cover-preview img {
-  width: 100%;
-  height: auto;
-  display: block;
-  transition: transform 0.3s;
-}
-
-.cover-preview:hover img {
-  transform: scale(1.02);
-}
-
-.description-textarea {
-  width: 100%;
-  height: 120px;
-  padding: 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  resize: vertical;
-  font-size: 14px;
-  line-height: 1.5;
-  transition: all 0.3s;
-}
-
-.description-textarea:focus {
-  outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
-}
-
-.empty-hint {
-  color: #999;
-  font-size: 13px;
-  text-align: center;
-  padding: 12px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  margin-top: 10px;
-  border: 1px dashed #e0e0e0;
-}
-
 @media (max-width: 1200px) {
   .editor-container {
     flex-direction: column;
-  }
-  
-  .editor-sidebar {
-    width: 100%;
-    margin-bottom: 20px;
-    min-width: auto;
   }
   
   .title-section {

@@ -42,10 +42,10 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useUserStore } from '@/stores/auth'
 
 const router = useRouter()
-const authStore = useAuthStore()
+const authStore = useUserStore()
 const showDropdown = ref(false)
 const dropdownRef = ref(null)
 

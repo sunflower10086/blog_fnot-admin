@@ -200,12 +200,12 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useUserStore } from '@/stores/auth'
 import api from '@/api'
 import config from '@/config/config'
 
 const router = useRouter()
-const authStore = useAuthStore()
+const authStore = useUserStore()
 
 const activeTab = ref('profile')
 const savingProfile = ref(false)

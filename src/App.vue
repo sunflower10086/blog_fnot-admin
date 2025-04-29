@@ -36,7 +36,8 @@ body, html {
 }
 
 .main-content {
-  min-height: 100%;
+  height: auto;
+  overflow-y: auto;
 }
 
 .main-content.with-header {

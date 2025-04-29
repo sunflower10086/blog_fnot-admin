@@ -163,8 +163,6 @@ const uploadImage = () => {
   background-color: #f1f3f4;
   border-color: #c6c9cc;
   color: #1a73e8;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .toolbar-button:active {
@@ -213,7 +211,8 @@ const uploadImage = () => {
   border-radius: 4px;
   font-size: 12px;
   white-space: nowrap;
-  z-index: 1000;
+  z-index: 9999;
+  pointer-events: none;
 }
 
 /* 响应式布局 */
