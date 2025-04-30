@@ -63,6 +63,7 @@ const blogStore = useBlogStore()
 const sidebarCollapsed = ref(false)
 
 const postId = ref(route.params.id ? parseInt(route.params.id) : null)
+// console.log(postId.value)
 const postTitle = ref('')
 const content = ref('')
 const contentTextarea = ref(null)
@@ -205,7 +206,7 @@ onMounted(async () => {
         content.value = post.content
         coverUrl.value = post.cover
         description.value = post.description
-        categoryId.value = post.categoryId
+        categoryId.value = post.category_id
         selectedTags.value = post.tags || []
       }
     } catch (error) {
@@ -255,6 +256,14 @@ const savePost = async () => {
     })
     return
   }
+
+  if (!categoryId.value) {
+    ElMessageBox.alert('请选择分类', '提示', {
+      confirmButtonText: '确定',
+      type: 'warning'
+    })
+    return
+  }
   
   saving.value = true
   
@@ -264,7 +273,7 @@ const savePost = async () => {
       content: content.value,
       cover: coverUrl.value,
       description: description.value,
-      categoryId: categoryId.value,
+      category_id: categoryId.value,
       tags: selectedTags.value
     }
     

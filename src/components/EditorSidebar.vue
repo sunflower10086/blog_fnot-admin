@@ -23,12 +23,15 @@
         <div v-if="categories.length === 0" class="empty-hint">
           暂无分类数据
         </div>
+        <div class="manage-link">
+          <router-link to="/category-tag">管理分类和标签</router-link>
+        </div>
       </div>
       
       <div class="section">
         <h3>标签</h3>
         <div v-if="availableTags.length === 0" class="empty-hint">
-          暂无标签数据，请添加新标签
+          暂无标签数据
         </div>
         <div v-else class="tags-container">
           <div 
@@ -39,18 +42,6 @@
             @click="toggleTag(tag.id)"
           >
             {{ tag.name }}
-          </div>
-        </div>
-        
-        <div class="tag-add-wrapper">
-          <div class="tag-input-container">
-            <el-input 
-              v-model="newTagValue" 
-              @keyup.enter="addNewTag"
-              placeholder="添加新标签"
-              class="tag-input"
-            />
-            <button @click="addNewTag" class="add-tag-btn">添加</button>
           </div>
         </div>
       </div>
@@ -131,6 +122,8 @@ const categoryIdValue = computed({
   get: () => props.categoryId,
   set: (value) => emit('update:categoryId', value)
 })
+console.log('categoryIdValue',categoryIdValue.value);
+
 
 const coverUrlValue = computed({
   get: () => props.coverUrl,
@@ -143,7 +136,6 @@ const descriptionValue = computed({
 })
 
 // 标签相关
-const newTagValue = ref('')
 const availableTags = computed(() => blogStore.getTags || [])
 const categories = computed(() => blogStore.getCategories || [])
 
@@ -159,19 +151,6 @@ const toggleTag = (tagId) => {
   }
   
   emit('update:selectedTags', updatedTags)
-}
-
-// 添加新标签
-const addNewTag = async () => {
-  if (!newTagValue.value.trim()) return
-  
-  try {
-    await blogStore.createTags([newTagValue.value.trim()])
-    newTagValue.value = ''
-    ElMessage.success('标签创建成功')
-  } catch (error) {
-    ElMessage.error('创建标签失败')
-  }
 }
 </script>
 
@@ -328,49 +307,21 @@ const addNewTag = async () => {
   box-shadow: 0 0.125rem 0.3125rem rgba(74, 144, 226, 0.3);
 }
 
-.tag-add-wrapper {
-  margin-top: 1rem;
-  border-top: 1px dashed #e6e6e6;
-  padding-top: 1rem;
+.manage-link {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  text-align: right;
 }
 
-.tag-input-container {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.tag-input {
-  flex: 1;
-  box-sizing: border-box;
-  margin-bottom: 0;
-  margin-right: 0;
-  width: auto;
-  font-size: 0.875rem;
-  transition: all 0.3s;
-}
-
-.add-tag-btn {
-  height: auto;
-  padding: 0.5rem 1rem;
-  white-space: nowrap;
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
+.manage-link a {
+  color: #4a90e2;
+  text-decoration: none;
   transition: all 0.2s;
-  font-weight: 500;
-  box-shadow: 0 0.125rem 0.3125rem rgba(74, 144, 226, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.add-tag-btn:hover {
-  background-color: #357abd;
-  transform: translateY(-0.0625rem);
-  box-shadow: 0 0.25rem 0.5rem rgba(74, 144, 226, 0.3);
+.manage-link a:hover {
+  color: #357abd;
+  text-decoration: underline;
 }
 
 .cover-input {

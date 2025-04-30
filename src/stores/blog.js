@@ -62,11 +62,9 @@ export const useBlogStore = defineStore('blog', {
       try {
         const post = await getPostDetail(postId)
         // 将baseInfo中的信息直接提取到currentPost上
-        if (post && post.baseInfo) {
+        if (post) {
           this.currentPost = {
-            ...post.baseInfo,
             ...post,
-            baseInfo: undefined // 移除baseInfo字段
           }
         } else {
           this.currentPost = post
@@ -104,13 +102,11 @@ export const useBlogStore = defineStore('blog', {
       try {
         const post = await updatePost({ post: postData })
         // 如果当前显示的是被更新的文章，更新currentPost
-        if (this.currentPost && this.currentPost.id === (post.baseInfo?.id || post.id)) {
+        if (this.currentPost && this.currentPost.id === (post?.id || post.id)) {
           // 将baseInfo中的信息直接提取到currentPost上
-          if (post && post.baseInfo) {
+          if (post) {
             this.currentPost = {
-              ...post.baseInfo,
               ...post,
-              baseInfo: undefined // 移除baseInfo字段
             }
           } else {
             this.currentPost = post

@@ -8,6 +8,7 @@
       <div class="nav-menu">
         <router-link to="/" class="nav-item">文档列表</router-link>
         <router-link to="/editor" class="nav-item">创建文档</router-link>
+        <router-link to="/category-tag" class="nav-item">分类标签</router-link>
       </div>
       
       <div class="user-menu">

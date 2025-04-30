@@ -16,9 +16,9 @@ service.interceptors.request.use(
     const token = getToken()
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
-      console.log('请求URL:', config.url, '添加token成功')
+      // console.log('请求URL:', config.url, '添加token成功')
     } else {
-      console.warn('请求URL:', config.url, '无token')
+      // console.warn('请求URL:', config.url, '无token')
     }
     return config
   },

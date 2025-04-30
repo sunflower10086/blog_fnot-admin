@@ -107,6 +107,8 @@ const handleLogin = async () => {
   } catch (err) {
     isLoading.value = false
     password.value = ''
+    // 显示错误信息
+    error.value = err.message || '登录失败，请检查用户名和密码'
   }
 }
 </script>

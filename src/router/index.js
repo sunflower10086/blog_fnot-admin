@@ -4,6 +4,7 @@ import DocumentListView from '../views/DocumentListView.vue'
 import LoginView from '../views/LoginView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import ProfileView from '../views/ProfileView.vue'
+import CategoryTagManagementView from '../views/CategoryTagManagementView.vue'
 import { useUserStore } from '../stores/auth'
 
 const routes = [
@@ -30,6 +31,12 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: ProfileView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/category-tag',
+    name: 'CategoryTagManagement',
+    component: CategoryTagManagementView,
     meta: { requiresAuth: true }
   },
   {
