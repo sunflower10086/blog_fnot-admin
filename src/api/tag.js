@@ -69,6 +69,6 @@ export const getPopular = (limit = 10) => {
  * 获取标签下的文档数量
  * @returns {Promise<Array>} 标签及其文档数量
  */
-export const getDocumentCount = () => {
-  return get(`${BASE_URL}/document-count`)
-} 
+// export const getDocumentCount = () => {
+//   return get(`${BASE_URL}/document-count`)
+// } 

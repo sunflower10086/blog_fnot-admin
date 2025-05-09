@@ -51,6 +51,6 @@ export const remove = (id) => {
  * 获取分类下的文档数量
  * @returns {Promise<Array>} 分类及其文档数量
  */
-export const getDocumentCount = () => {
-  return get(`${BASE_URL}/document-count`)
-} 
+// export const getDocumentCount = () => {
+//   return get(`${BASE_URL}/document-count`)
+// } 

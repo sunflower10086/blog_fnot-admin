@@ -2,9 +2,9 @@ import request from '@/utils/request'
 
 /**
  * 获取博客列表
- * @param {Object} params - 查询参数
+ * @param {{page: number, page_size: number}} params - 查询参数
  * @param {number} params.page - 页码
- * @param {number} params.pageSize - 每页数量
+ * @param {number} params.page_size - 每页数量
  * @returns {Promise<Object>} 博客列表响应
  */
 export function getPostList(params) {
@@ -34,7 +34,7 @@ export function getPostDetail(postId) {
  * @param {string} data.cover - 封面
  * @param {Array<number>} data.tags - 标签ID数组
  * @param {string} data.description - 描述
- * @param {number} data.categoryId - 分类ID
+ * @param {number} data.category_id - 分类ID
  * @param {string} data.content - 内容
  * @returns {Promise<Object>} 创建的博客
  */

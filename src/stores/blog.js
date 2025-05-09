@@ -39,7 +39,7 @@ export const useBlogStore = defineStore('blog', {
       this.loading = true
       this.error = null
       try {
-        const response = await getPostList({ page, pageSize })
+        const response = await getPostList({ page:page, page_size:pageSize })
         // 确保即使返回null也转换为空数组
         this.posts = response.posts || []
         this.totalPosts = response.total || 0

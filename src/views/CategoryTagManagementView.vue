@@ -208,17 +208,21 @@ onMounted(async () => {
 async function loadCategories() {
   try {
     const categoriesData = await categoryApi.getAll()
-    const countData = await categoryApi.getDocumentCount()
-    
+    console.log('categoriesData', categoriesData)
+    // const countData = await categoryApi.getDocumentCount()
+    const countData = 0
+    categories.value = categoriesData.data.categories
+
     // 合并分类与计数数据
-    categories.value = categoriesData.map(category => {
-      const countItem = countData.find(item => item.categoryId === category.id)
-      return {
-        ...category,
-        count: countItem ? countItem.count : 0
-      }
-    })
+    // categories.value = categoriesData.data.categories.map(category => {
+    //   const countItem = countData.find(item => item.categoryId === category.id)
+    //   return {
+    //     ...category,
+    //     count: countItem ? countItem.count : 0
+    //   }
+    // })
   } catch (error) {
+    console.error(error) 
     ElMessage.error('获取分类数据失败')
   }
 }
